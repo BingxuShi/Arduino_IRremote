@@ -123,51 +123,39 @@ void setup() {
 #endif
     Serial.println(SEND_BUTTON_PIN);
 
-    pinMode(STATUS_PIN, OUTPUT);
+    
 }
 
-void loop() {
+void loop() {  
+  int sendstate = 0;
+  if (IrReceiver.decode()) {
 
-    // If button pressed, send the code.
-    int buttonState = digitalRead(SEND_BUTTON_PIN); // Button pin is active LOW
-
-    /*
-     * Check for button just released in order to activate receiving
-     */
-    if (lastButtonState == LOW && buttonState == HIGH) {
-        // Re-enable receiver
-        Serial.println(F("Button released"));
-        IrReceiver.start();
+    IrReceiver.printIRResultShort(&Serial);
+    IrReceiver.printIRSendUsage(&Serial);
+    sStoredIRData.receivedIRData.flags = 0; // clear flags -esp. repeat- for later sending
+    Serial.println();
+    
+    if(IrReceiver.decodedIRData.command == 0x1C){
+      sendstate = 1;
     }
+    IrReceiver.resume(); // resume receiver
+  }
+  if(sendstate == 1){
+    IrReceiver.stop();
+    Serial.println(F("Button pressed, now sending"));
+    Serial.println();
+    const uint16_t rawData[] = {4330,4470, 430,1770, 430,620, 430,1770, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 430,670, 430,1720, 480,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 430,670, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 430,670, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,1770, 430,1720, 430,1770, 430,1720, 430,1770, 430,5320, 4330,4470, 430,1770, 430,620, 480,1720, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 480,620, 430,1770, 430,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 480,620, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,1720, 480,1720, 430}; // Using exact NEC timing
+    IrSender.sendRaw(rawData, sizeof(rawData) / sizeof(rawData[0]), NEC_KHZ); 
+    delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
 
-    /*
-     * Check for static button state
-     */
-    if (buttonState == LOW) {
-        IrReceiver.stop();
-        /*
-         * Button pressed send stored data or repeat
-      */
-        Serial.println(F("Button pressed, now sending"));
-        // digitalWrite(STATUS_PIN, HIGH);
-        // if (lastButtonState == buttonState) {
-        //     sStoredIRData.receivedIRData.flags = IRDATA_FLAGS_IS_REPEAT;
-        // }
-        //sendCode(&sStoredIRData);
-        //digitalWrite(STATUS_PIN, LOW);
-        const uint16_t rawData[] = {4330,4470, 430,1770, 430,620, 430,1770, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 430,670, 430,1720, 480,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 430,670, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 430,670, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,1770, 430,1720, 430,1770, 430,1720, 430,1770, 430,5320, 4330,4470, 430,1770, 430,620, 480,1720, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 480,620, 430,1770, 430,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 480,620, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,1720, 480,1720, 430}; // Using exact NEC timing
-        IrSender.sendRaw(rawData, sizeof(rawData) / sizeof(rawData[0]), NEC_KHZ); 
-        delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    IrReceiver.start();
 
-        /*
-         * Button is not pressed, check for incoming data
-         */
-    } else if (IrReceiver.available()) {
-        storeCode(IrReceiver.read());
-        IrReceiver.resume(); // resume receiver
-    }
-
-    lastButtonState = buttonState;
+  }
+  
+        
+  
+     
+  
 }
 
 // Stores the code for later playback in sStoredIRData
