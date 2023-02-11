@@ -80,7 +80,11 @@
 
 #include <IRremote.hpp>
 
-const uint16_t rawData_openaircon[] = {4330,4470, 430,1770, 430,620, 430,1770, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 430,670, 430,1720, 480,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 430,670, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 430,670, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,1770, 430,1720, 430,1770, 430,1720, 430,1770, 430,5320, 4330,4470, 430,1770, 430,620, 480,1720, 430,1770, 430,620, 430,670, 430,1720, 430,670, 430,620, 430,1770, 430,620, 480,620, 430,1770, 430,1720, 430,670, 430,1720, 430,670, 430,1720, 430,1770, 430,1720, 480,1720, 430,670, 430,1720, 430,1770, 430,1720, 430,670, 430,620, 480,620, 430,620, 480,1720, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,620, 480,620, 430,620, 480,620, 430,620, 480,620, 430,670, 430,620, 430,1770, 430,1720, 430,1770, 430,1720, 480,1720, 430}; // Using exact NEC timing
+uint16_t rawDataPower[67] = {4430,4570, 480,670, 480,1720, 530,1720, 530,1720, 530,620, 480,620, 530,620, 480,620, 530,620, 480,1770, 480,1770, 480,1770, 480,620, 480,670, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,1770, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,1770, 480,620, 480,670, 480,1720, 530,1720, 530,1720, 480,1770, 480};
+uint16_t rawDataSoundadd[67] = {4430,4620, 480,620, 480,1770, 480,1770, 480,1770, 480,620, 530,620, 480,620, 530,620, 480,620, 530,1720, 530,1720, 530,1720, 530,620, 480,620, 530,620, 480,620, 530,620, 480,620, 530,1720, 530,620, 480,1770, 480,620, 530,620, 480,620, 530,1720, 480,1770, 480,670, 480,1770, 480,620, 480,1770, 480,1770, 480,1770, 480};
+uint16_t rawDataSoundres[67] = {4480,4570, 480,620, 530,1720, 480,1770, 480,1770, 480,670, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,1770, 480,1770, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,620, 480,1770, 480,670, 480,1720, 530,620, 480,670, 480,620, 480,670, 480,1720, 530,620, 480,1770, 480,620, 530,1720, 530,1720, 480,1770, 480};
+uint16_t rawDataSoundoff[67] = {4480,4570, 480,620, 530,1720, 530,1720, 480,1770, 480,670, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,1770, 480,1770, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,620, 480,1770, 480,1770, 480,620, 530,620, 480,620, 530,620, 480,670, 480,1720, 530,620, 480,620, 530,1720, 530,1720, 480,1770, 480,1770, 480};
+uint16_t rawDataSingle[67] = {4480,4570, 480,620, 480,1770, 480,1770, 480,1770, 480,670, 480,620, 480,670, 480,620, 480,670, 480,1770, 480,1770, 480,1770, 480,620, 480,670, 480,620, 480,670, 480,1720, 530,1720, 530,1720, 530,1720, 480,670, 480,620, 530,620, 480,620, 530,620, 480,620, 530,620, 480,620, 530,1720, 480,1770, 480,1770, 480,1770, 480};
 
 int SEND_BUTTON_PIN = APPLICATION_PIN;
 int STATUS_PIN = 16;
@@ -129,7 +133,12 @@ void setup() {
 }
 
 void loop() {  
-  int sendstate = 0;
+  int PowerState = 0;
+  int SoundaddState = 0;
+  int SoundresState = 0;
+  int SoundoffState = 0;
+  int SingleState = 0;
+
   if (IrReceiver.decode()) {
 
     IrReceiver.printIRResultShort(&Serial);
@@ -137,18 +146,57 @@ void loop() {
     sStoredIRData.receivedIRData.flags = 0; // clear flags -esp. repeat- for later sending
     Serial.println();
     
-    if(IrReceiver.decodedIRData.command == 0x1C){
-      sendstate = 1;
+    switch(IrReceiver.decodedIRData.command){
+      case 0x15:
+        PowerState = 1;
+        break;
+      case 0x12:
+        SoundaddState = 1;
+        break;
+      case 0x13:
+        SoundresState = 1;
+        break;
+      case 0x14:
+        SoundoffState = 1;
+        break;
+      case 0x25:
+        SingleState = 1;
+        break;
     }
     IrReceiver.resume(); // resume receiver
   }
-  if(sendstate == 1){
+  if(PowerState || SoundaddState || SoundresState || SoundoffState || SingleState){
     IrReceiver.stop();
-    Serial.println(F("Button pressed, now sending"));
-    Serial.println();
-    
-    IrSender.sendRaw(rawData_openaircon, sizeof(rawData_openaircon) / sizeof(rawData_openaircon[0]), NEC_KHZ); 
-    delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    if(PowerState){
+      Serial.println(F("Power Button pressed, now sending"));
+      Serial.println();
+      IrSender.sendRaw(rawDataPower, sizeof(rawDataPower) / sizeof(rawDataPower[0]), NEC_KHZ); 
+      delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    }
+    if(SoundaddState){
+      Serial.println(F("Soundadd Button pressed, now sending"));
+      Serial.println();
+      IrSender.sendRaw(rawDataSoundadd, sizeof(rawDataSoundadd) / sizeof(rawDataSoundadd[0]), NEC_KHZ); 
+      delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    }
+    if(SoundresState){
+      Serial.println(F("Soundres Button pressed, now sending"));
+      Serial.println();
+      IrSender.sendRaw(rawDataSoundres, sizeof(rawDataSoundres) / sizeof(rawDataSoundres[0]), NEC_KHZ); 
+      delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    }
+    if(SoundoffState){
+      Serial.println(F("Soundoff Button pressed, now sending"));
+      Serial.println();
+      IrSender.sendRaw(rawDataSoundoff, sizeof(rawDataSoundoff) / sizeof(rawDataSoundoff[0]), NEC_KHZ); 
+      delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    }
+    if(SingleState){
+      Serial.println(F("Single Button pressed, now sending"));
+      Serial.println();
+     // IrSender.sendRaw(rawDataSingle, sizeof(rawDataSingle) / sizeof(rawDataSingle[0]), NEC_KHZ); 
+      delay(DELAY_BETWEEN_REPEAT); // Wait a bit between retransmissions
+    }
 
     IrReceiver.start();
 
@@ -158,63 +206,5 @@ void loop() {
   
      
   
-}
-
-// Stores the code for later playback in sStoredIRData
-// Most of this code is just logging
-void storeCode(IRData *aIRReceivedData) {
-    if (aIRReceivedData->flags & IRDATA_FLAGS_IS_REPEAT) {
-        Serial.println(F("Ignore repeat"));
-        return;
-    }
-    if (aIRReceivedData->flags & IRDATA_FLAGS_IS_AUTO_REPEAT) {
-        Serial.println(F("Ignore autorepeat"));
-        return;
-    }
-    if (aIRReceivedData->flags & IRDATA_FLAGS_PARITY_FAILED) {
-        Serial.println(F("Ignore parity error"));
-        return;
-    }
-    /*
-     * Copy decoded data
-     */
-    sStoredIRData.receivedIRData = *aIRReceivedData;
-
-    if (sStoredIRData.receivedIRData.protocol == UNKNOWN) {
-        Serial.print(F("Received unknown code and store "));
-        Serial.print(IrReceiver.decodedIRData.rawDataPtr->rawlen - 1);
-        Serial.println(F(" timing entries as raw "));
-        IrReceiver.printIRResultRawFormatted(&Serial, true); // Output the results in RAW format
-        sStoredIRData.rawCodeLength = IrReceiver.decodedIRData.rawDataPtr->rawlen - 1;
-        /*
-         * Store the current raw data in a dedicated array for later usage
-         */
-        IrReceiver.compensateAndStoreIRResultInArray(sStoredIRData.rawCode);
-    } else {
-        IrReceiver.printIRResultShort(&Serial);
-        IrReceiver.printIRSendUsage(&Serial);
-        sStoredIRData.receivedIRData.flags = 0; // clear flags -esp. repeat- for later sending
-        Serial.println();
-    }
-}
-
-void sendCode(storedIRDataStruct *aIRDataToSend) {
-    if (aIRDataToSend->receivedIRData.protocol == UNKNOWN /* i.e. raw */) {
-        // Assume 38 KHz
-        IrSender.sendRaw(aIRDataToSend->rawCode, aIRDataToSend->rawCodeLength, 38);
-
-        Serial.print(F("Sent raw "));
-        Serial.print(aIRDataToSend->rawCodeLength);
-        Serial.println(F(" marks or spaces"));
-    } else {
-
-        /*
-         * Use the write function, which does the switch for different protocols
-         */
-        IrSender.write(&aIRDataToSend->receivedIRData, DEFAULT_NUMBER_OF_REPEATS_TO_SEND);
-
-        Serial.print(F("Sent: "));
-        printIRResultShort(&Serial, &aIRDataToSend->receivedIRData, false);
-    }
 }
 
